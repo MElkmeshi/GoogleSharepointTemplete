@@ -162,11 +162,11 @@ app.post("/DarAssendan/SharePoint/get", (req,res) => {
               "Content-Type" : "application/json; odata=verbose",
               "Accept" : "application/json; odata=nometadata"
           },
-          uri: encodeURI("https://redtechly0.sharepoint.com/sites/REDCompanies/_api/web/lists/GetByTitle('DarAssendan')/items?$filter=Cats eq " + req.body.Categories),
+          uri: encodeURI("https://redtechly0.sharepoint.com/sites/REDCompanies/_api/web/lists/GetByTitle('DarAssendan')/items?$filter=Cats eq " + "'" + req.body.Categories + "'"),
           body: "",
           method: 'GET'
         }, function (_err, _resreq, _body) {
-          res.send(_body)
+          res.send(manychatjson(_body))
         })        
   });
 });
