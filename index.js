@@ -3,21 +3,22 @@ const { google } = require("googleapis");
 const app = express();
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 function manychatjson(json,cardnum=10) {
   if (cardnum>num || cardnum == 0)
       cardnum = num;
   //{if you want to edit} edit the num varibles to the length of the list you want to repart about
-  var num = json["values"].length,i;
+  var num = json.length,i;
   manychat = {"version": "v2","content": {"messages": [],"actions": [],"quick_replies": []}};
   for (i = 0; i < Math.floor(num/cardnum); i++)   {
       manychat["content"]["messages"].push({"type": "cards","elements": [],"image_aspect_ratio": "horizontal"});
       for (let j = 0; j < cardnum; j++)   {
           /*edit each vaible the way you want it to display
           don't forget the other for loop*/
-          title = json["value"][(i*cardnum)+j][ProductName];
-          subtitle = json["value"][(i*cardnum)+j][ProductDiscreption];
-          image_url = json["value"][(i*cardnum)+j][ProductImageURL];
+          title = json[(i*cardnum)+j]["ProductName"];
+          subtitle = json[(i*cardnum)+j]["ProductDiscreption"];
+          image_url = json[(i*cardnum)+j]["ProductImageURL"];
           manychat["content"]["messages"][i]["elements"].push({"title": title,"subtitle": subtitle,"image_url": image_url,"action_url": "https://manychat.com","buttons": []});
       }
   }
@@ -25,16 +26,16 @@ function manychatjson(json,cardnum=10) {
       manychat["content"]["messages"].push({"type": "cards","elements": [],"image_aspect_ratio": "horizontal"});
           for(let j = 0; j < num%cardnum; j++)    {
               //this one
-              title = json["value"][(i*cardnum)+j][ProductName];
-              subtitle = json["value"][(i*cardnum)+j][ProductDiscreption];
-              image_url = json["value"][(i*cardnum)+j][ProductImageURL];
+              title = json[(i*cardnum)+j]["ProductName"];
+              subtitle = json[(i*cardnum)+j]["ProductDiscreption"];
+              image_url = json[(i*cardnum)+j]["ProductImageURL"];
               manychat["content"]["messages"][i]["elements"].push({"title": title,"subtitle": subtitle,"image_url": image_url,"action_url": "https://manychat.com","buttons": []});    
           }
   }
   return manychat;
 }
 
-app.get("/get", async (req, res) => {
+app.post("/get", async (req, res) => {
   const { request, name } = req.body;
   const auth = new google.auth.GoogleAuth({
     keyFile: "credentials.json",
@@ -52,7 +53,6 @@ app.get("/get", async (req, res) => {
     valueRenderOption: "UNFORMATTED_VALUE",
   });
   x = getRows.data.values
-  console.log(x.length)
   var xx = {"value" : []};
   for (let i = 0; i < x.length; i++) {
     xx["value"].push({
@@ -67,9 +67,9 @@ app.get("/get", async (req, res) => {
       "ProductImageURL" : x[i][8]})
   }
   var filter = xx.value.filter(function (el) {
-    return el.Cats == 'لافيتات';
+    return el.Cats == req.body.Categories;
   });
-  res.send(filter);
+  res.send(manychatjson(filter));
 });
 
 app.get("/append", async (req, res) => {
@@ -99,4 +99,4 @@ app.get("/append", async (req, res) => {
 });
 
 
-app.listen(1337, (req, res) => console.log("running on 1337"));
+app.listen(5000, (req, res) => console.log("running on 5000"));
