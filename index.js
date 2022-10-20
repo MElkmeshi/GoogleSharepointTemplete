@@ -1,6 +1,7 @@
 const express = require("express");
 const { google } = require("googleapis");
 const app = express();
+let PORT = process.env.PORT || 5000;
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -110,4 +111,7 @@ app.get("/append", async (req, res) => {
   res.send('this is append');
 });
 
-app.listen(5000, (req, res) => console.log("running on http://localhost:5000"));
+app.listen(PORT, () => {
+    console.log(`listening on post ${PORT}`);
+});
+
