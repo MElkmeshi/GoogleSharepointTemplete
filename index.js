@@ -72,7 +72,7 @@ app.post("/get", async (req, res) => {
   res.send(manychatjson(filter));
 });
 
-app.get("/append", async (req, res) => {
+app.post("/append", async (req, res) => {
   const { request, name } = req.body;
 
   const auth = new google.auth.GoogleAuth({
@@ -98,5 +98,16 @@ app.get("/append", async (req, res) => {
   res.send('Done');
 });
 
+app.get("/", async (req, res) => {
+  res.send('Hello World');
+});
 
-app.listen(5000, (req, res) => console.log("running on 5000"));
+app.get("/get", async (req, res) => {
+  res.send('this is get');
+});
+
+app.get("/append", async (req, res) => {
+  res.send('this is append');
+});
+
+app.listen(5000, (req, res) => console.log("running on http://localhost:5000"));
