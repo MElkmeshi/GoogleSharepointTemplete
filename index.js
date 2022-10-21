@@ -2,15 +2,14 @@ const express = require("express");
 const { google } = require("googleapis");
 const app = express();
 let PORT = process.env.PORT || 5000;
-app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 var request = require('request');
-var FormData = require('form-data');
-var fs = require('fs');
-
+//global varibles for Sharepoint
+const TenantID = "e1cbaea0-f8c8-4ce7-a484-ade672f55f8d";
+const TenantName = "redtechly0";
+const ApplicationID = "00000003-0000-0ff1-ce00-000000000000";
 //DarAssendan
-
 //first googlesheets
 function DarAssendangoogle(json,cardnum=10) {
   if (cardnum>num || cardnum == 0)
@@ -97,7 +96,7 @@ app.post("/DarAssendan/Google/append", async (req, res) => {
   res.send('Done');
 });
 //second Sharepoint
-function manychatjson(json,cardnum=10) {
+function DarAssendansharepoint(json,cardnum=10) {
    
   if (cardnum>num || cardnum == 0)
       cardnum = num;
@@ -127,74 +126,90 @@ function manychatjson(json,cardnum=10) {
   }
   return manychat;
 }
-function sh(callback){
-  var x;
-  ApplicationID = "00000003-0000-0ff1-ce00-000000000000";
-  TenantName = "redtechly0";
-  TenantID = "e1cbaea0-f8c8-4ce7-a484-ade672f55f8d";
-  ClientID = "bc1fdfac-50ef-4031-90c8-f12401b38e7a";
-  ClientSecret = "br+8R9XC+97p24aP8iSZaIgl16CKOxUjpcVlG41WXnM=";
-  RefreshToken = "PAQABAAEAAAD--DLA3VO7QrddgJg7WevrLVZx_-lO6VBwT_3LyQbCKCz_y31k2_NBUlGOCHVaTQNssNFOz9ciOG68LVin33nflACoDGbMXjK6GMvshqE6z7ccWyDM2Rm4Nc9WJUJazyiIxg1xCFWRNm2kwLtsw4klNSe9kEtoJQyAMTxRfqpTBn_RDXQYM7NCGkczXQ_r4V23GesvEFuggk5JDi3r9N-6Rr4C7VU7JQaX5VWn4tWDmdiGQC8d4b-lIbBMN6Iwm8dCmjQw7tenNj-K7sLKt4QioI31zIt46Q6MxsRkjUFCqCAA";
-  var x;
-  request({
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      form: {
-          grant_type: "refresh_token",
-          client_id: ClientID + "@" + TenantID,
-          client_secret: ClientSecret,  
-          resource: ApplicationID + "/" + TenantName + ".sharepoint.com@" + TenantID,
-          refresh_token: RefreshToken
-      },
-      uri: "https://accounts.accesscontrol.windows.net/" + TenantID + "/tokens/OAuth/2",
-      method: 'POST'
-  }, function (_err, _resreq, _body) {
-     x = JSON.parse(_body);
-     callback(x);
-  }); 
+class REDCompanies{
+  static ClientID = "bc1fdfac-50ef-4031-90c8-f12401b38e7a";
+  static ClientSecret = "br+8R9XC+97p24aP8iSZaIgl16CKOxUjpcVlG41WXnM=";
+  static RefreshToken = "PAQABAAEAAAD--DLA3VO7QrddgJg7WevrLVZx_-lO6VBwT_3LyQbCKCz_y31k2_NBUlGOCHVaTQNssNFOz9ciOG68LVin33nflACoDGbMXjK6GMvshqE6z7ccWyDM2Rm4Nc9WJUJazyiIxg1xCFWRNm2kwLtsw4klNSe9kEtoJQyAMTxRfqpTBn_RDXQYM7NCGkczXQ_r4V23GesvEFuggk5JDi3r9N-6Rr4C7VU7JQaX5VWn4tWDmdiGQC8d4b-lIbBMN6Iwm8dCmjQw7tenNj-K7sLKt4QioI31zIt46Q6MxsRkjUFCqCAA";
+  static AccessToken;
+  constructor(){
+  }
+  static generatetoken() {
+      var RefreshToken = this.RefreshToken
+      var ClientSecret = this.ClientSecret
+      var RefreshToken = this.RefreshToken
+      var ClientID = this.ClientID
+      return new Promise(function(resolve){
+      request ({
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              form: {
+                  grant_type: "refresh_token",
+                  client_id: ClientID + "@" + TenantID,
+                  client_secret: ClientSecret,
+                  resource: ApplicationID + "/" + TenantName + ".sharepoint.com@" + TenantID,
+                  refresh_token: RefreshToken
+              },
+              uri: "https://accounts.accesscontrol.windows.net/" + TenantID + "/tokens/OAuth/2",
+              method: 'POST'
+          }, async function (_err, _resreq, _body) {
+             resolve(JSON.parse(await _body).access_token);
+          }); 
+      })     
+  }
+  static getAccessToken() {
+      if(this.AccessToken == null)
+          this.AccessToken = this.generatetoken()
+      return this.AccessToken;
+  }
 }
-app.post("/DarAssendan/SharePoint/get", (req,res) => {
-  sh(function (body){
-    var xzs = 'hi';
-      request({
-          json:true,
-          headers: {
-              "Authorization" : "Bearer "+ body.access_token,
-              "Content-Type" : "application/json; odata=verbose",
-              "Accept" : "application/json; odata=nometadata"
-          },
-          uri: encodeURI("https://redtechly0.sharepoint.com/sites/REDCompanies/_api/web/lists/GetByTitle('DarAssendan')/items?$filter=Cats eq " + "'" + req.body.Categories + "'"),
-          body: "",
-          method: 'GET'
-        }, function (_err, _resreq, _body) {
-          res.send(manychatjson(_body))
-        })        
+app.post("/DarAssendan/SharePoint/get", async (req,res) => {
+  SiteName = "REDCompanies";
+  ListName = "DarAssendan";
+  request({
+      json:true,
+      headers: {
+          "Authorization" : "Bearer "+ await REDCompanies.getAccessToken(),
+          "Content-Type" : "application/json; odata=verbose",
+          "Accept" : "application/json; odata=nometadata"
+      },
+      uri: encodeURI("https://redtechly0.sharepoint.com/sites/"+ SiteName +"/_api/web/lists/GetByTitle('"+ ListName +"')/items?$filter=Cats eq '" + req.body.Categories + "'"),
+      body: "",
+      method: 'GET'
+    }, function (_err, _resreq, _body) {
+      res.send(DarAssendansharepoint(_body))          
   });
 });
-app.post("/DarAssendan/SharePoint/append", (req,res) => {
-  sh(function (body){
-    var xzs = 'hi';
-      request({
-          json:true,
-          headers: {
-              "Authorization" : "Bearer "+ body.access_token,
-              "Content-Type" : "application/json; odata=verbose",
-              "Accept" : "application/json; odata=nometadata"
-          },
-          uri: encodeURI("https://redtechly0.sharepoint.com/sites/REDCompanies/_api/web/lists/GetByTitle('DarAssendan')/items?$filter=Cats eq " + req.body.Categories),
-          body: "",
-          method: 'GET'
-        }, function (_err, _resreq, _body) {
-          res.send(_body)
-        })        
+app.post("/DarAssendan/SharePoint/append", async (req,res) => {
+  SiteName = "REDCompanies";
+  ListName = "DarAssendan";
+  request({
+      json:true,
+      headers: {
+          "Authorization" : "Bearer "+ await REDCompanies.getAccessToken(),
+          "Content-Type" : "application/json; odata=verbose",
+          "Accept" : "application/json; odata=nometadata"
+      },
+      uri: "https://" + TenantName + ".sharepoint.com/sites/" + SiteName + "/_api/web/lists/GetByTitle('" + ListName + "')/items",
+      body: {
+        "__metadata":{"type":"SP.Data.DarAssendanListItem"},
+        "Active": true,
+        "ProductName": "test",
+        "Cats": "test",
+        "ProductDiscreption": "test",
+        "ProductPrice": 0,
+        "Pricing": null,
+        "Time": null,
+        "ProductImageURL": "test"
+    },
+      method: 'POST'
+    }, function (_err, _resreq, _body) {
+      res.send(_body)          
   });
 });
-
 
 app.get("/", async (req, res) => {
   res.send('Welcome to Red Tech MicroService');
 });
 
 app.listen(PORT, () => {
-    console.log(`listening on post ${PORT}`);
+    console.log(`listening on post http://localhost:${PORT}`);
 });
-
