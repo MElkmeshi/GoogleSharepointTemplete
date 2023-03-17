@@ -192,7 +192,6 @@ class RedTech {
   }
   static async getAccessToken() {
     if (this.AccessToken == null || Date.now().valueOf() > (this.IssueDate + 28500000)) {
-      console.log("Generating new token " + ++NumOfToken);
       this.IssueDate = Date.now().valueOf();
       this.AccessToken = await this.generatetoken();
     }
