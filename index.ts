@@ -4,11 +4,55 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 let PORT = process.env.PORT || 5000;
 import * as requestp from "request-promise";
-
 import { google } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';
 
-export interface GoogleSheet {
+type ManychatGallery = {
+  version: string;
+  content: {
+    messages: Array<{
+      type: string;
+      elements: Array<{
+        title: string;
+        subtitle: string;
+        image_url: string;
+        action_url: string;
+        buttons: Array<any>;
+      }>;
+      image_aspect_ratio?: string;
+    }>;
+    actions: Array<any>;
+    quick_replies: Array<any>;
+  };
+}
+type SharePointListItems = {
+  value: Array<{
+    FileSystemObjectType?: number
+    Id?: number
+    ServerRedirectedEmbedUri: any
+    ServerRedirectedEmbedUrl?: string
+    ID?: number
+    ContentTypeId?: string
+    Title?: string
+    Modified?: string
+    Created?: string
+    AuthorId?: number
+    EditorId?: number
+    OData__UIVersionString?: string
+    Attachments?: boolean
+    GUID?: string
+    ComplianceAssetId: any
+    Active?: boolean
+    ProductName: string
+    Cats: string
+    ProductDiscreption: string
+    ProductPrice: number
+    Pricing?: string
+    Time?: string
+    ProductImageURL: string
+  }>
+}
+type GoogleSheet = {
   value: Array<{
     ProductID: string;
     Active: string;
@@ -23,10 +67,9 @@ export interface GoogleSheet {
   }>;
 }
 
+
+
 function DarAssendangoogle(json: GoogleSheet, cardnum = 10) {
-  // if (cardnum > num || cardnum == 0)
-  // cardnum = num;
-  //{if you want to edit} edit the num varibles to the length of the list you want to repart about
   let num: number = json.value.length, i;
   let title: string, subtitle: string, image_url: string;
   let manychat:ManychatGallery = { "version": "v2", "content": { "messages": [], "actions": [], "quick_replies": [] } };
@@ -90,32 +133,6 @@ app.get("/DarAssendan/Google/get", async (req, res) => {
   res.send(DarAssendangoogle(map));
 });
 
-
-app.get("/", async (request, response) => {
-  let x = requestp("https://jsonplaceholder.typicode.com/todos/1");
-  response.send(x);
-});
-
-// define a custom interface for manychat
-interface ManychatGallery {
-  version: string;
-  content: {
-    messages: Array<{
-      type: string;
-      elements: Array<{
-        title: string;
-        subtitle: string;
-        image_url: string;
-        action_url: string;
-        buttons: Array<any>;
-      }>;
-      image_aspect_ratio?: string;
-    }>;
-    actions: Array<any>;
-    quick_replies: Array<any>;
-  };
-}
-
 // use the custom interfaces in your function signature
 function DarAssendansharepoint(json: SharePointListItems, cardnum = 10): ManychatGallery {
   let num: number = json["value"].length, i: number;
@@ -144,35 +161,6 @@ function DarAssendansharepoint(json: SharePointListItems, cardnum = 10): Manycha
   }
   return manychat;
 }
-
-export interface SharePointListItems {
-  value: Array<{
-    FileSystemObjectType?: number
-    Id?: number
-    ServerRedirectedEmbedUri: any
-    ServerRedirectedEmbedUrl?: string
-    ID?: number
-    ContentTypeId?: string
-    Title?: string
-    Modified?: string
-    Created?: string
-    AuthorId?: number
-    EditorId?: number
-    OData__UIVersionString?: string
-    Attachments?: boolean
-    GUID?: string
-    ComplianceAssetId: any
-    Active?: boolean
-    ProductName: string
-    Cats: string
-    ProductDiscreption: string
-    ProductPrice: number
-    Pricing?: string
-    Time?: string
-    ProductImageURL: string
-  }>
-}
-
 class RedTech {
   static TenantID: string = "e1cbaea0-f8c8-4ce7-a484-ade672f55f8d";
   static TenantName: string = "redtechly0";
@@ -189,7 +177,7 @@ class RedTech {
     this.ListName = ListName
   }
   static async generatetoken() {
-    let result: string = await requestp({
+    let result: string = await requestp.post({
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       form: {
         grant_type: "refresh_token",
@@ -198,21 +186,20 @@ class RedTech {
         resource: this.ApplicationID + "/" + this.TenantName + ".sharepoint.com@" + this.TenantID,
         refresh_token: this.RefreshToken
       },
-      uri: "https://accounts.accesscontrol.windows.net/" + this.TenantID + "/tokens/OAuth/2",
-      method: 'POST'
+      uri: "https://accounts.accesscontrol.windows.net/" + this.TenantID + "/tokens/OAuth/2"
     });
     return JSON.parse(result).access_token;
   }
   static async getAccessToken() {
     if (this.AccessToken == null || Date.now().valueOf() > (this.IssueDate + 28500000)) {
-      console.log("Generating new token");
+      console.log("Generating new token " + ++NumOfToken);
       this.IssueDate = Date.now().valueOf();
       this.AccessToken = await this.generatetoken();
     }
     return this.AccessToken;
   }
   async getListItems() {
-    let result = await requestp({
+    let result = await requestp.get({
       json: true,
       headers: {
         "Authorization": "Bearer " + await RedTech.getAccessToken(),
@@ -220,15 +207,14 @@ class RedTech {
         "Accept": "application/json; odata=nometadata"
       },
       uri: encodeURI("https://" + RedTech.TenantName + ".sharepoint.com/sites/" + this.SiteName + "/_api/web/lists/GetByTitle('" + this.ListName + "')/items"),
-      body: "",
-      method: 'GET'
+      body: ""
     });
     return result;
   }
 
 }
 
-app.get("/DarAssendan/SharePoint/get", async (req, res) => {
+app.get("/DarAssendan/SharePoint/get", async (req:express.Request, res:express.Response) => {
   let SiteName: string = "REDCompanies";
   let ListName: string = "DarAssendan";
   let darassedn: RedTech = new RedTech(ListName, SiteName)
